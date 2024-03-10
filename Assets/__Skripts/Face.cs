@@ -74,7 +74,6 @@ public class Face : MonoBehaviour
                 {
                     CreateCell(localPos);
                 }
-                
             }
         }
     }

@@ -9,9 +9,6 @@ public class GameFieald : MonoBehaviour
 
     public List<Transform> faces;
 
-    [SerializeField]
-    private float createFaceDelay = 0.2f;
-
     private void Awake()
     {
         CreateGameField();
@@ -24,7 +21,7 @@ public class GameFieald : MonoBehaviour
             facePrefab.transform.position = tF.position;
             GameObject tFP = Instantiate(facePrefab);
             tFP.transform.localScale = tF.localScale;
-            tFP.transform.rotation = tF.rotation;
+            tFP.transform.localRotation = tF.localRotation;
 
             tFP.transform.SetParent(transform, false);
         }
