@@ -1,7 +1,7 @@
+using ExtensionMethods;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using ExtensionMethods;
 
 public class Cell : MonoBehaviour
 {
@@ -27,11 +27,11 @@ public class Cell : MonoBehaviour
     [Header("Set dynamically")]
     public bool IsBomb;
 
+    public static bool FLAG_MODE = false;
+
     [SerializeField]
     private List<Cell> neigboringCells;
-    [SerializeField]
     private eStates state = eStates.close;
-
     private Face parentFace;
     private Material mat;
 
@@ -45,23 +45,24 @@ public class Cell : MonoBehaviour
         return state;
     }
 
+    public Face GetParentFace()
+    {
+        return parentFace;
+    }
+
     private void Start()
     {
-        parentFace = transform.parent.GetComponent<Face>();
         mat = GetComponent<MeshRenderer>().material;
 
         Close();
         if (Random.value < bombSpawnChance)
             IsBomb = true;
-        FindNeigbors();
         transform.rotation = Quaternion.identity;
     }
 
-    private void FindNeigbors()
+    public void FindNeigbors(bool findOnlyParentPlane = false)
     {
-        int matchingByX = 0;
-        int matchingByY = 0;
-        int matchingByZ = 0;
+        parentFace = transform.parent.GetComponent<Face>();
         float radius = 1f + Mathf.Max(parentFace.GetHorizontalOffset(), parentFace.GetVerticalOffset());
         Collider[] neigborColliders = Physics.OverlapSphere(transform.position, radius);
 
@@ -70,41 +71,20 @@ public class Cell : MonoBehaviour
         {
             if (col.TryGetComponent(out neigboringCell) && col.transform.position != transform.position)
             {
-                Vector3 pos = neigboringCell.transform.position;
-                if (pos.x == transform.position.x) matchingByX++;
-                if (pos.y == transform.position.y) matchingByY++;
-                if (pos.z == transform.position.z) matchingByZ++;
-                neigboringCells.Add(neigboringCell);
+                if (findOnlyParentPlane)
+                {
+                    if (parentFace.IsCellOnFace(neigboringCell) && !neigboringCells.Contains(neigboringCell))
+                    {
+                        neigboringCells.Add(neigboringCell);
+                    }
+                }
+                else
+                {
+                    if (!neigboringCells.Contains(neigboringCell))
+                        neigboringCells.Add(neigboringCell);
+                }
             }
         }
-
-        // Select cells that cannot contain neighbors from different planes.
-        if (!(matchingByX == matchingByY || matchingByY == matchingByZ || matchingByX == matchingByZ))
-        {
-            // Delete cells that are not in the same plane with the rest of their neighbors and this cell. 
-            int maxMathing = Mathf.Max(matchingByX, matchingByY, matchingByZ);
-            if (maxMathing == matchingByX) RemoveCellInOutAxis('x');
-            if (maxMathing == matchingByY) RemoveCellInOutAxis('y');
-            if (maxMathing == matchingByZ) RemoveCellInOutAxis('z');
-        }
-    }
-
-    private void RemoveCellInOutAxis(char axis)
-    {
-        List<int> cellsForRemoving = new List<int>();
-        for(int i = 0; i < neigboringCells.Count; i++)
-        {
-            Cell cell = neigboringCells[i];
-            if (cell.transform.position.GetVectorValueByChar(axis) != transform.position.GetVectorValueByChar(axis))
-            {
-                cellsForRemoving.Add(i);
-            }
-        }
-
-        for (int i = cellsForRemoving.Count - 1; i > -1; i--)
-        {
-            neigboringCells.RemoveAt(cellsForRemoving[i]);
-        }    
     }
 
     public void SetFlag()
@@ -122,7 +102,7 @@ public class Cell : MonoBehaviour
     {
         if (state != eStates.flag) return;
 
-        foreach(SpriteRenderer sR in flagRenderers)
+        foreach (SpriteRenderer sR in flagRenderers)
         {
             sR.enabled = false;
         }
@@ -132,7 +112,7 @@ public class Cell : MonoBehaviour
     public void Open()
     {
         if (state != eStates.close) return;
-        
+
         if (IsBomb)
         {
             OpenBomb();
@@ -142,7 +122,7 @@ public class Cell : MonoBehaviour
         state = eStates.open;
 
         int countNearingBomb = 0;
-        foreach(Cell nC in neigboringCells)
+        foreach (Cell nC in neigboringCells)
         {
             if (nC.IsBomb) countNearingBomb++;
         }
@@ -159,7 +139,8 @@ public class Cell : MonoBehaviour
 
             mat.color = openColor;
 
-        } else
+        }
+        else
         {
             ActivateNumbers(countNearingBomb.ToString());
         }
@@ -167,19 +148,19 @@ public class Cell : MonoBehaviour
 
     private void OpenBomb()
     {
-        mat.color = Color.red;
+        mat.color = bombColor;
     }
 
     private void Close()
     {
         state = eStates.close;
 
-        foreach(SpriteRenderer sR in flagRenderers)
+        foreach (SpriteRenderer sR in flagRenderers)
         {
             sR.enabled = false;
         }
-        
-        foreach(TextMeshPro tMP in numbers)
+
+        foreach (TextMeshPro tMP in numbers)
         {
             tMP.enabled = false;
         }
@@ -211,6 +192,16 @@ public class Cell : MonoBehaviour
 
     private void OnMouseUp()
     {
-        Open();
+        if (!FLAG_MODE)
+        {
+            Open();
+        } else
+        {
+            if (state == eStates.flag)
+                UnSetFlag();
+            else
+                SetFlag();
+        }
+        
     }
 }
