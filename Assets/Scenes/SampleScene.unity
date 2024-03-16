@@ -1644,9 +1644,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   facePrefab: {fileID: 5468076719922996364, guid: d15ef9203a76ded4e8bf441ab56413ca, type: 3}
-  faces:
-  - {fileID: 945584072}
+  tFaces:
   - {fileID: 1090968526}
+  - {fileID: 945584072}
   - {fileID: 1871931377}
   - {fileID: 2079692105}
   - {fileID: 1223602490}

@@ -13,24 +13,20 @@ public class Cell : MonoBehaviour
     }
 
     [Header("Set in inspector")]
-    [SerializeField]
-    private List<TextMeshPro> numbers;
-    [SerializeField]
-    private List<SpriteRenderer> flagRenderers;
-    [SerializeField]
-    private float bombSpawnChance = 0.3f;
-    [SerializeField]
-    private Color closeColor = Color.gray;
-    private Color openColor = Color.green;
-    private Color bombColor = Color.red;
+    [SerializeField] private List<TextMeshPro> numbers;
+    [SerializeField] private List<SpriteRenderer> flagRenderers;
+    [SerializeField] private float bombSpawnChance = 0.05f;
+    [SerializeField] private Color closeColor = Color.gray;
+    [SerializeField] private Color openColor = Color.green;
+    [SerializeField] private Color bombColor = Color.red;
 
     [Header("Set dynamically")]
     public bool IsBomb;
-
+    public int NeiboringBombNumber {get; private set;}
     public static bool FLAG_MODE = false;
 
-    [SerializeField]
-    private List<Cell> neigboringCells;
+    [SerializeField] private List<Cell> neigboringCells;
+
     private eStates state = eStates.close;
     private Face parentFace;
     private Material mat;
@@ -56,7 +52,11 @@ public class Cell : MonoBehaviour
 
         Close();
         if (Random.value < bombSpawnChance)
+        {
             IsBomb = true;
+            mat.color = Color.red;
+        }
+
         transform.rotation = Quaternion.identity;
     }
 
@@ -84,6 +84,17 @@ public class Cell : MonoBehaviour
                         neigboringCells.Add(neigboringCell);
                 }
             }
+        }
+
+        CountNeiboringBombs();
+    }
+
+    public void CountNeiboringBombs()
+    {
+        foreach (Cell cell in neigboringCells)
+        {
+            if (cell.IsBomb == true)
+                NeiboringBombNumber++;
         }
     }
 
@@ -121,28 +132,21 @@ public class Cell : MonoBehaviour
 
         state = eStates.open;
 
-        int countNearingBomb = 0;
-        foreach (Cell nC in neigboringCells)
+        if (NeiboringBombNumber == 0)
         {
-            if (nC.IsBomb) countNearingBomb++;
-        }
-
-        if (countNearingBomb == 0)
-        {
-            ActivateNumbers("");
-
             foreach (Cell nC in neigboringCells)
             {
-                if (nC.GetState() == eStates.close && CheckOrthogonality(transform.position, nC.transform.position))
+
+                if (nC.GetState() == eStates.close)
+                {
                     nC.Open();
+                }
             }
-
             mat.color = openColor;
-
         }
         else
         {
-            ActivateNumbers(countNearingBomb.ToString());
+            ActivateNumbers(NeiboringBombNumber.ToString());
         }
     }
 
@@ -177,31 +181,19 @@ public class Cell : MonoBehaviour
         }
     }
 
-    private bool CheckOrthogonality(Vector3 v1, Vector3 v2)
-    {
-        Vector3 direction = (v1 - v2).normalized;
-
-        foreach (Vector3 oV in orthogonalVectors)
-        {
-            if (direction == oV) return true;
-        }
-
-        return false;
-
-    }
-
     private void OnMouseUp()
     {
         if (!FLAG_MODE)
         {
             Open();
-        } else
+        }
+        else
         {
             if (state == eStates.flag)
                 UnSetFlag();
             else
                 SetFlag();
         }
-        
+
     }
 }
