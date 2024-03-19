@@ -1,4 +1,3 @@
-using ExtensionMethods;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -12,6 +11,8 @@ public class Cell : MonoBehaviour
         open
     }
 
+    #region Properties
+
     [Header("Set in inspector")]
     [SerializeField] private List<TextMeshPro> numbers;
     [SerializeField] private List<SpriteRenderer> flagRenderers;
@@ -22,19 +23,25 @@ public class Cell : MonoBehaviour
 
     [Header("Set dynamically")]
     public bool IsBomb;
-    public int NeiboringBombNumber {get; private set;}
+    public int NeiboringBombNumber; //{get; private set;}
     public static bool FLAG_MODE = false;
 
-    [SerializeField] private List<Cell> neigboringCells;
+    [SerializeField] private List<Cell> neighboringCells;
 
-    private eStates state = eStates.close;
+    public eStates state {get; private set;} = eStates.close;
     private Face parentFace;
     private Material mat;
+    private Animator animator;
+    private static int bombCount = 0;
 
     private List<Vector3> orthogonalVectors = new List<Vector3>
     {
         Vector3.back, Vector3.forward, Vector3.down, Vector3.up, Vector3.left, Vector3.right
     };
+
+    #endregion
+
+    #region Methods
 
     public eStates GetState()
     {
@@ -44,20 +51,6 @@ public class Cell : MonoBehaviour
     public Face GetParentFace()
     {
         return parentFace;
-    }
-
-    private void Start()
-    {
-        mat = GetComponent<MeshRenderer>().material;
-
-        Close();
-        if (Random.value < bombSpawnChance)
-        {
-            IsBomb = true;
-            mat.color = Color.red;
-        }
-
-        transform.rotation = Quaternion.identity;
     }
 
     public void FindNeigbors(bool findOnlyParentPlane = false)
@@ -73,32 +66,31 @@ public class Cell : MonoBehaviour
             {
                 if (findOnlyParentPlane)
                 {
-                    if (parentFace.IsCellOnFace(neigboringCell) && !neigboringCells.Contains(neigboringCell))
+                    if (parentFace.IsCellOnFace(neigboringCell) && !neighboringCells.Contains(neigboringCell))
                     {
-                        neigboringCells.Add(neigboringCell);
+                        neighboringCells.Add(neigboringCell);
                     }
                 }
                 else
                 {
-                    if (!neigboringCells.Contains(neigboringCell))
-                        neigboringCells.Add(neigboringCell);
+                    if (!neighboringCells.Contains(neigboringCell))
+                        neighboringCells.Add(neigboringCell);
                 }
             }
         }
-
-        CountNeiboringBombs();
     }
 
     public void CountNeiboringBombs()
     {
-        foreach (Cell cell in neigboringCells)
+        NeiboringBombNumber = 0;
+        foreach (Cell cell in neighboringCells)
         {
             if (cell.IsBomb == true)
                 NeiboringBombNumber++;
         }
     }
 
-    public void SetFlag()
+    private void SetFlag()
     {
         if (state != eStates.close) return;
 
@@ -109,7 +101,7 @@ public class Cell : MonoBehaviour
         state = eStates.flag;
     }
 
-    public void UnSetFlag()
+    private void UnSetFlag()
     {
         if (state != eStates.flag) return;
 
@@ -120,9 +112,22 @@ public class Cell : MonoBehaviour
         state = eStates.close;
     }
 
+    public void ChangeFlag()
+    {
+        if (state == eStates.flag)
+        {
+            UnSetFlag();
+        } 
+        else 
+        {
+            SetFlag();
+        }
+    }
+
     public void Open()
     {
         if (state != eStates.close) return;
+        state = eStates.open;
 
         if (IsBomb)
         {
@@ -130,16 +135,16 @@ public class Cell : MonoBehaviour
             return;
         }
 
-        state = eStates.open;
-
+        CountNeiboringBombs();
+        
         if (NeiboringBombNumber == 0)
         {
-            foreach (Cell nC in neigboringCells)
+            foreach (Cell nC in neighboringCells)
             {
 
                 if (nC.GetState() == eStates.close)
                 {
-                    nC.Open();
+                    nC.Opening();
                 }
             }
             mat.color = openColor;
@@ -148,6 +153,12 @@ public class Cell : MonoBehaviour
         {
             ActivateNumbers(NeiboringBombNumber.ToString());
         }
+    }
+
+    public void Opening()
+    {
+        if (state != eStates.close) return;
+        animator.SetBool("IsOpening", true);
     }
 
     private void OpenBomb()
@@ -181,19 +192,37 @@ public class Cell : MonoBehaviour
         }
     }
 
-    private void OnMouseUp()
+    public void DiactivateBombAndOpen(int maxDepth, int depth)
     {
-        if (!FLAG_MODE)
+        if (depth > maxDepth) return;
+
+        IsBomb = false;
+
+        foreach(Cell cell in neighboringCells)
         {
-            Open();
-        }
-        else
-        {
-            if (state == eStates.flag)
-                UnSetFlag();
-            else
-                SetFlag();
+            cell.DiactivateBombAndOpen(maxDepth, depth +  1);
         }
 
+        if (depth == 1) Opening();
     }
+
+    #endregion
+
+    #region MonoBehaviour Methods
+    private void Start()
+    {
+        mat = GetComponent<MeshRenderer>().material;
+        animator = GetComponent<Animator>();
+
+        Close();
+        if (Random.value < bombSpawnChance && bombCount < 80)
+        {
+            IsBomb = true;
+            bombCount++;
+        }
+
+        transform.rotation = Quaternion.identity;
+    }
+
+    #endregion
 }

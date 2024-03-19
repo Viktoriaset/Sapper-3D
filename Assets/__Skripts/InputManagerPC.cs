@@ -26,5 +26,12 @@ public class InputManagerPC: InputManager
         {
             ChangeCameraDistance(Input.mouseScrollDelta.y);
         }
+
+        if (Input.GetMouseButtonUp(0))
+        {
+            currentMousePos = Input.mousePosition;
+            if (currentMousePos == startMousePos)
+                ClickRayCast(currentMousePos);
+        }
     }
 }

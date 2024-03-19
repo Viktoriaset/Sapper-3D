@@ -1617,6 +1617,7 @@ GameObject:
   - component: {fileID: 9098761719058227676}
   - component: {fileID: 8819386615022491923}
   - component: {fileID: 1946948802722760899}
+  - component: {fileID: 5943336491280491148}
   m_Layer: 0
   m_Name: Cell
   m_TagString: Untagged
@@ -1740,5 +1741,28 @@ MonoBehaviour:
   - {fileID: 8694035964911631263}
   bombSpawnChance: 0.3
   closeColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  openColor: {r: 0, g: 1, b: 0, a: 1}
+  bombColor: {r: 1, g: 0, b: 0, a: 1}
   IsBomb: 0
   neigboringCells: []
+--- !u!95 &5943336491280491148
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856628500869420445}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 7bf7d83c421edd24fbe5c12a515ed072, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0

@@ -1,37 +1,44 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using Zenject;
 
 public class InputModeController : MonoBehaviour
 {
+    #region Properties
     [Header("Set in inspector")]
-    [SerializeField]
-    private GameObject switchBG;
-    [SerializeField] 
-    private Vector3 minePos;
-    [SerializeField]
-    private Vector3 flagPos;
+    [SerializeField] private RectTransform switchBG;
+    [SerializeField] private Vector2 minePos;
+    [SerializeField] private Vector2 flagPos;
+    [SerializeField] private float smoothing = 2f;
+    private Vector2 targetPos;
+    [Inject] private InputManager inputManager;
+    #endregion
 
-    private Vector3 targetPos;
-
+    #region Methods
     public void TurnFlagMode()
     {
         targetPos = flagPos;
-        Cell.FLAG_MODE = true;
+        inputManager.clickType = InputManager.eClickType.flag;
     }
 
     public void TurnMineMode()
     {
         targetPos = minePos;
-        Cell.FLAG_MODE = false;
+        inputManager.clickType = InputManager.eClickType.open;
     }
+    #endregion
 
+    #region MonoBehavior Methods
+    void Start()
+    {
+        targetPos = minePos;
+    }
     private void Update()
     {
-        if (switchBG.transform.localPosition != targetPos)
+        if (switchBG.anchoredPosition != targetPos)
         {
-            switchBG.transform.localPosition
-                = Vector3.Lerp(switchBG.transform.localPosition, targetPos, Time.deltaTime);
+            switchBG.anchoredPosition =
+                Vector3.Lerp(switchBG.anchoredPosition, targetPos, smoothing*Time.fixedDeltaTime);
         }
     }
+    #endregion
 }
