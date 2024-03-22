@@ -1,26 +1,25 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Zenject;
 
 public class GameFieald : MonoBehaviour
 {
+    #region Properties
     [Header("Set in inspector")]
     [SerializeField] private GameObject facePrefab;
     public List<Transform> tFaces;
     private List<Face> faces = new List<Face>();
+    [Inject] private DiContainer diContainer;
+    #endregion
 
-    private int lateUpdateCounter = 0;
-
-    private void Awake()
-    {
-        CreateGameField();
-    }
+    #region Methods
 
     private void CreateGameField()
     {
         foreach (Transform tF in tFaces)
         {
             facePrefab.transform.position = tF.position;
-            GameObject tFP = Instantiate(facePrefab);
+            GameObject tFP = diContainer.InstantiatePrefab(facePrefab);
             tFP.transform.localScale = tF.localScale;
             tFP.transform.localRotation = tF.localRotation;
 
@@ -28,17 +27,16 @@ public class GameFieald : MonoBehaviour
             tFP.GetComponent<Face>().CreateCells();
             faces.Add(tFP.GetComponent<Face>());
         }
-
-        
     }
 
-    private void LateUpdate() 
+    #endregion
+
+    #region MonoBehaviour Methods
+    private void Awake()
     {
-        if (lateUpdateCounter == 0)
-        {
-            foreach (Face f in faces)
-                f.StartFindNeiborings();    
-        }
-        lateUpdateCounter++;
+        CreateGameField();
     }
+    #endregion
+
+    
 }

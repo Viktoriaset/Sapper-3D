@@ -8,7 +8,7 @@ public class InputModeController : MonoBehaviour
     [SerializeField] private RectTransform switchBG;
     [SerializeField] private Vector2 minePos;
     [SerializeField] private Vector2 flagPos;
-    [SerializeField] private float smoothing = 2f;
+    [SerializeField] private float smoothing = 4f;
     private Vector2 targetPos;
     [Inject] private InputManager inputManager;
     #endregion

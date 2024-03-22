@@ -16,7 +16,7 @@ public class InputManagerPC: InputManager
         {
             currentMousePos = Input.mousePosition;
 
-            RotateOnHorizontal(currentMousePos.x - startMousePos.x);
+            RotateOnHorizontal(startMousePos.x - currentMousePos.x);
             RotateOnVertical(currentMousePos.y - startMousePos.y);
 
             startMousePos = currentMousePos;

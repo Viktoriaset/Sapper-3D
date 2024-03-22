@@ -1,7 +1,7 @@
 using UnityEngine;
 public class OpeningState : StateMachineBehaviour 
 {
-    private float immersionTime = 0.5f;
+    private float immersionTime = 0.25f;
     private float startTime;
     private float depthImmersion = 1f;
     private float smoothing = 2f;
@@ -21,7 +21,7 @@ public class OpeningState : StateMachineBehaviour
 
         if (u >= 1)
         {
-            if (cell.state == Cell.eStates.close)
+            if (cell.State == Cell.eStates.close)
             {
                 animator.transform.localPosition = target;
                 target += Vector3.down * depthImmersion;

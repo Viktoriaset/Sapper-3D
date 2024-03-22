@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
+using Zenject;
 
 public class Face : MonoBehaviour
 {
+    #region Properties
     static private Dictionary<Vector3, Cell> employedBoundaryPositions = new Dictionary<Vector3, Cell>();
 
     [Header("Set in inspector")]
@@ -19,6 +22,10 @@ public class Face : MonoBehaviour
 
     private List<List<Cell>> cells = new List<List<Cell>>();
 
+    [Inject] private IInstantiator diContainer;
+    #endregion
+
+    #region Methods
     static private Cell GetCellByPos(Vector3 position)
     {
         foreach(Vector3 tV in employedBoundaryPositions.Keys)
@@ -77,7 +84,7 @@ public class Face : MonoBehaviour
 
     private Cell CreateCell(Vector3 localPos)
     {
-        GameObject cellGo = Instantiate(cellPrefab);
+        GameObject cellGo = diContainer.InstantiatePrefab(cellPrefab);
         cellGo.name = (transform.TransformPoint(localPos)).ToString();
         cellGo.transform.SetParent(transform, false);
         cellGo.transform.localPosition = localPos;
@@ -113,4 +120,14 @@ public class Face : MonoBehaviour
             }
         }
     }
+
+    #endregion
+
+    #region MonoBehaviour Methods
+    private async void Start() {
+        await UniTask.DelayFrame(1);
+        StartFindNeiborings();
+    }
+
+    #endregion
 }

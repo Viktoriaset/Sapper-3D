@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using Zenject;
+using Cysharp.Threading.Tasks;
 
 public class Cell : MonoBehaviour
 {
@@ -23,21 +25,16 @@ public class Cell : MonoBehaviour
 
     [Header("Set dynamically")]
     public bool IsBomb;
-    public int NeiboringBombNumber; //{get; private set;}
-    public static bool FLAG_MODE = false;
-
+    public int NeiboringBombNumber {get; private set;}
+    public eStates State {get; private set;} = eStates.close;
     [SerializeField] private List<Cell> neighboringCells;
 
-    public eStates state {get; private set;} = eStates.close;
+
+    private GameController gameController;
     private Face parentFace;
     private Material mat;
     private Animator animator;
     private static int bombCount = 0;
-
-    private List<Vector3> orthogonalVectors = new List<Vector3>
-    {
-        Vector3.back, Vector3.forward, Vector3.down, Vector3.up, Vector3.left, Vector3.right
-    };
 
     #endregion
 
@@ -45,12 +42,18 @@ public class Cell : MonoBehaviour
 
     public eStates GetState()
     {
-        return state;
+        return State;
     }
 
     public Face GetParentFace()
     {
         return parentFace;
+    }
+
+    [Inject]
+    public void SetGameController(GameController gameController)
+    {
+        this.gameController = gameController;
     }
 
     public void FindNeigbors(bool findOnlyParentPlane = false)
@@ -92,29 +95,29 @@ public class Cell : MonoBehaviour
 
     private void SetFlag()
     {
-        if (state != eStates.close) return;
+        if (State != eStates.close) return;
 
         foreach (SpriteRenderer sR in flagRenderers)
         {
             sR.enabled = true;
         }
-        state = eStates.flag;
+        State = eStates.flag;
     }
 
     private void UnSetFlag()
     {
-        if (state != eStates.flag) return;
+        if (State != eStates.flag) return;
 
         foreach (SpriteRenderer sR in flagRenderers)
         {
             sR.enabled = false;
         }
-        state = eStates.close;
+        State = eStates.close;
     }
 
     public void ChangeFlag()
     {
-        if (state == eStates.flag)
+        if (State == eStates.flag)
         {
             UnSetFlag();
         } 
@@ -126,8 +129,8 @@ public class Cell : MonoBehaviour
 
     public void Open()
     {
-        if (state != eStates.close) return;
-        state = eStates.open;
+        if (State != eStates.close) return;
+        State = eStates.open;
 
         if (IsBomb)
         {
@@ -157,18 +160,19 @@ public class Cell : MonoBehaviour
 
     public void Opening()
     {
-        if (state != eStates.close) return;
+        if (State != eStates.close) return;
         animator.SetBool("IsOpening", true);
     }
 
-    private void OpenBomb()
+    public void OpenBomb()
     {
         mat.color = bombColor;
+        gameController.GameOver();
     }
 
     private void Close()
     {
-        state = eStates.close;
+        State = eStates.close;
 
         foreach (SpriteRenderer sR in flagRenderers)
         {
@@ -219,6 +223,7 @@ public class Cell : MonoBehaviour
         {
             IsBomb = true;
             bombCount++;
+            gameController.BombCells.Add(this);
         }
 
         transform.rotation = Quaternion.identity;
