@@ -1,41 +1,44 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour
 {
-    #region Properties
-    [Header("Set in inspector")]
-    [SerializeField] private float gameOverDuration = 2f;
-    [HideInInspector] public List<Cell> BombCells;
-    #endregion
-
-    #region Methods
-    public void GameOver()
+    private enum eGameState
     {
+        playing,
+
+        gameOver,
+
+    }
+
+    [Header("Set in inspector")]
+    [SerializeField] private const string mainMenuScene = "MainMenu";
+    [SerializeField] private int gameOverDurationInMilliseconds = 200;
+    [HideInInspector] public List<Cell> BombCells;
+
+    private eGameState gameState = eGameState.playing;
+
+    public async void GameOver()
+    {
+        if (gameState != eGameState.playing)
+            return;
+
+        gameState = eGameState.gameOver;
+
         foreach(Cell cell in BombCells)
             cell.Open();
 
-        Invoke("Exit", gameOverDuration);
+        await UniTask.Delay(gameOverDurationInMilliseconds);
+
+        Exit();
     }
 
     public void Exit()
     {
-        SceneManager.LoadScene("MainMenu");
+        Cell.bombCount = 0;
+        Face.ClearEmployedBoundaryPosition();
+        SceneManager.LoadSceneAsync(mainMenuScene);
     }
-
-    #endregion
-
-    #region MonoBehavior Methods
-    void Start()
-    {
-        
-    }
-
-    
-    void Update()
-    {
-        
-    }
-    #endregion
 }

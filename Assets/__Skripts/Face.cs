@@ -21,11 +21,28 @@ public class Face : MonoBehaviour
     private float verticalOffset;
 
     private List<List<Cell>> cells = new List<List<Cell>>();
+    private ICellFactory _cellFactory;
+    #endregion
+    #region MonoBehaviour Methods
+    private async void Start() {
+        await UniTask.DelayFrame(1);
+        StartFindNeiborings();
+    }
 
-    [Inject] private IInstantiator diContainer;
+    private void OnDestroy() 
+    {
+        employedBoundaryPositions.Clear();    
+    }
+
     #endregion
 
     #region Methods
+
+    public void Constructor(ICellFactory cellFactory)
+    {
+        _cellFactory = cellFactory;
+    }
+
     static private Cell GetCellByPos(Vector3 position)
     {
         foreach(Vector3 tV in employedBoundaryPositions.Keys)
@@ -47,7 +64,7 @@ public class Face : MonoBehaviour
         return verticalOffset;
     }
 
-    public void CreateCells()
+    public void FillCells()
     {
         float width = cellInWidth * cellPrefab.transform.localScale.x + (cellInWidth - 1) * horizontalOffset;
         float height = cellInHeight * cellPrefab.transform.localScale.z + (cellInHeight - 1) * verticalOffset;
@@ -58,37 +75,49 @@ public class Face : MonoBehaviour
         {
             cells.Add(new List<Cell>());
             float vPos = vStartPos + cellPrefab.transform.localScale.y * i + i * verticalOffset;
+
             for (int j = 0; j < cellInWidth; j++)
             {
                 float hPos = hStartPos + cellPrefab.transform.localScale.x * j + j * horizontalOffset;
                 Vector3 localPos = new Vector3(hPos, 0, vPos);
-                
-                if (i == 0 || j == 0 || i == cellInHeight - 1 || j == cellInWidth - 1)
-                {
-                    Vector3 tPos = transform.TransformPoint(localPos);
-                    Cell existCell = GetCellByPos(tPos);
-                    if (existCell != null)
-                    {
-                        cells[i].Add(existCell);
-                    } else
-                    {
-                        employedBoundaryPositions[tPos] = CreateCell(localPos);
-                    }
-                } else
-                {
-                    CreateCell(localPos);
-                }
+
+                AddCell(i, j, localPos);
             }
+        }
+    }
+
+    private void AddCell(int i, int j, Vector3 localPos)
+    {
+        if (!IsCellOnBoundary(i, j))
+        {
+            cells[i].Add(CreateCell(localPos));
+            return;
+        }
+
+        Vector3 tPos = transform.TransformPoint(localPos);
+        Cell existCell = GetCellByPos(tPos);
+
+        if (existCell != null)
+        {
+            cells[i].Add(existCell);
+            return;
+        }
+
+        Cell cell = CreateCell(localPos);
+        employedBoundaryPositions[tPos] = cell;
+        cells[i].Add(cell);
+
+        bool IsCellOnBoundary(int i, int j)
+        {
+            return i == 0 || j == 0 || i == cellInHeight - 1 || j == cellInWidth - 1;
         }
     }
 
     private Cell CreateCell(Vector3 localPos)
     {
-        GameObject cellGo = diContainer.InstantiatePrefab(cellPrefab);
-        cellGo.name = (transform.TransformPoint(localPos)).ToString();
-        cellGo.transform.SetParent(transform, false);
+        GameObject cellGo = _cellFactory.Create(Vector3.zero, transform);
         cellGo.transform.localPosition = localPos;
-        cells[cells.Count - 1].Add(cellGo.GetComponent<Cell>());
+        cellGo.name = transform.position.ToString();
 
         return cellGo.GetComponent<Cell>();
     }
@@ -109,7 +138,7 @@ public class Face : MonoBehaviour
         {
             for (int j = 0; j < cells[i].Count; j++)
             {
-                if (i > 0 && j > 0 && i < cells.Count - 1 && j < cells[i].Count - 1)
+                if (IsBoundary(i, j))
                 {
                     cells[i][j].FindNeigbors(true);
                 }
@@ -119,15 +148,18 @@ public class Face : MonoBehaviour
                 }
             }
         }
+
+        bool IsBoundary(int i, int j)
+        {
+            return i == 0 || j == 0 || i == cells.Count - 1 || j == cells[i].Count - 1;
+        }
+    }
+
+    public static void ClearEmployedBoundaryPosition()
+    {
+        employedBoundaryPositions.Clear();
     }
 
     #endregion
 
-    #region MonoBehaviour Methods
-    private async void Start() {
-        await UniTask.DelayFrame(1);
-        StartFindNeiborings();
-    }
-
-    #endregion
 }

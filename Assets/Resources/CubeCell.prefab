@@ -1619,7 +1619,7 @@ GameObject:
   - component: {fileID: 1946948802722760899}
   - component: {fileID: 5943336491280491148}
   m_Layer: 0
-  m_Name: Cell
+  m_Name: CubeCell
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

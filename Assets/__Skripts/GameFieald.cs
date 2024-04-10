@@ -4,39 +4,34 @@ using Zenject;
 
 public class GameFieald : MonoBehaviour
 {
-    #region Properties
     [Header("Set in inspector")]
-    [SerializeField] private GameObject facePrefab;
     public List<Transform> tFaces;
     private List<Face> faces = new List<Face>();
-    [Inject] private DiContainer diContainer;
-    #endregion
+    private IFaceFactory _faceFactory;
 
-    #region Methods
-
-    private void CreateGameField()
+    [Inject]
+    private void Constructor(IFaceFactory faceFactory)
     {
-        foreach (Transform tF in tFaces)
-        {
-            facePrefab.transform.position = tF.position;
-            GameObject tFP = diContainer.InstantiatePrefab(facePrefab);
-            tFP.transform.localScale = tF.localScale;
-            tFP.transform.localRotation = tF.localRotation;
-
-            tFP.transform.SetParent(transform, false);
-            tFP.GetComponent<Face>().CreateCells();
-            faces.Add(tFP.GetComponent<Face>());
-        }
+        _faceFactory = faceFactory;
     }
 
-    #endregion
-
-    #region MonoBehaviour Methods
     private void Awake()
     {
         CreateGameField();
     }
-    #endregion
 
-    
+    private void CreateGameField()
+    {
+        _faceFactory.Load();
+        foreach (Transform tF in tFaces)
+        {
+            GameObject tFP = _faceFactory.Create(tF, transform);
+            tFP.transform.localPosition = tF.position;
+            tFP.transform.localScale = tF.localScale;
+            tFP.transform.localRotation = tF.localRotation;
+
+            tFP.GetComponent<Face>().FillCells();
+            faces.Add(tFP.GetComponent<Face>());
+        }
+    }
 }

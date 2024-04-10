@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using Zenject;
-using Cysharp.Threading.Tasks;
 
 public class Cell : MonoBehaviour
 {
@@ -13,7 +11,6 @@ public class Cell : MonoBehaviour
         open
     }
 
-    #region Properties
 
     [Header("Set in inspector")]
     [SerializeField] private List<TextMeshPro> numbers;
@@ -29,31 +26,37 @@ public class Cell : MonoBehaviour
     public eStates State {get; private set;} = eStates.close;
     [SerializeField] private List<Cell> neighboringCells;
 
-
-    private GameController gameController;
+    private GameController _gameController;
     private Face parentFace;
     private Material mat;
     private Animator animator;
-    private static int bombCount = 0;
+    public static int bombCount = 0;
 
-    #endregion
 
-    #region Methods
+    public void Constructor(GameController gameController)
+    {
+        _gameController = gameController;
+    }
+
+    private void Start()
+    {
+        mat = GetComponent<MeshRenderer>().material;
+        animator = GetComponent<Animator>();
+
+        Close();
+        if (Random.value < bombSpawnChance && bombCount < 80)
+        {
+            IsBomb = true;
+            bombCount++;
+            _gameController.BombCells.Add(this);
+        }
+
+        transform.rotation = Quaternion.identity;
+    }
 
     public eStates GetState()
     {
         return State;
-    }
-
-    public Face GetParentFace()
-    {
-        return parentFace;
-    }
-
-    [Inject]
-    public void SetGameController(GameController gameController)
-    {
-        this.gameController = gameController;
     }
 
     public void FindNeigbors(bool findOnlyParentPlane = false)
@@ -62,24 +65,36 @@ public class Cell : MonoBehaviour
         float radius = 1f + Mathf.Max(parentFace.GetHorizontalOffset(), parentFace.GetVerticalOffset());
         Collider[] neigborColliders = Physics.OverlapSphere(transform.position, radius);
 
-        Cell neigboringCell;
         foreach (Collider col in neigborColliders)
         {
-            if (col.TryGetComponent(out neigboringCell) && col.transform.position != transform.position)
-            {
-                if (findOnlyParentPlane)
-                {
-                    if (parentFace.IsCellOnFace(neigboringCell) && !neighboringCells.Contains(neigboringCell))
-                    {
-                        neighboringCells.Add(neigboringCell);
-                    }
-                }
-                else
-                {
-                    if (!neighboringCells.Contains(neigboringCell))
-                        neighboringCells.Add(neigboringCell);
-                }
-            }
+            
+            CheckAndAddNeighboring(findOnlyParentPlane, col);
+        }
+    }
+
+    private void CheckAndAddNeighboring(bool findOnlyParentPlane, Collider col)
+    {
+        Cell neigboringCell;
+        if (!IsCell(col, out neigboringCell))
+            return;
+            
+        if (neighboringCells.Contains(neigboringCell))
+            return;
+
+        if (!findOnlyParentPlane)
+        {
+            neighboringCells.Add(neigboringCell);
+            return;
+        }
+
+        if (parentFace.IsCellOnFace(neigboringCell))
+            neighboringCells.Add(neigboringCell);
+        
+        return;
+
+        bool IsCell(Collider col, out Cell neigboringCell)
+        {
+            return col.TryGetComponent(out neigboringCell) && col.transform.position != transform.position;
         }
     }
 
@@ -167,7 +182,7 @@ public class Cell : MonoBehaviour
     public void OpenBomb()
     {
         mat.color = bombColor;
-        gameController.GameOver();
+        _gameController.GameOver();
     }
 
     private void Close()
@@ -209,25 +224,4 @@ public class Cell : MonoBehaviour
 
         if (depth == 1) Opening();
     }
-
-    #endregion
-
-    #region MonoBehaviour Methods
-    private void Start()
-    {
-        mat = GetComponent<MeshRenderer>().material;
-        animator = GetComponent<Animator>();
-
-        Close();
-        if (Random.value < bombSpawnChance && bombCount < 80)
-        {
-            IsBomb = true;
-            bombCount++;
-            gameController.BombCells.Add(this);
-        }
-
-        transform.rotation = Quaternion.identity;
-    }
-
-    #endregion
 }
